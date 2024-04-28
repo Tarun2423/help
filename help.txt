@@ -474,3 +474,77 @@ export class BrandsSliderComponent implements OnInit {
     }
   }
 }
+
+
+
+
+
+
+
+
+import { Component, OnInit } from '@angular/core';
+
+@Component({
+  selector: 'app-brands-slider',
+  templateUrl: './brands-slider.component.html',
+  styleUrls: ['./brands-slider.component.css']
+})
+export class BrandsSliderComponent implements OnInit {
+  brands = [
+    { image: "mc.jpg", name: "MC-Donalds" },
+    { image: "dom.jpg", name: "Dominos" },
+    { image: "a2b.jpg", name: "A2B" },
+    { image: "ss.jpg", name: "SS Hyderabad Biryani" },
+    { image: "anj.jpg", name: "Anjappar" },
+    { image: "san.jpg", name: "Sangeetha" },
+    { image: "bur.jpg", name: "Burger Kings" },
+    { image: "kfc.jpg", name: "KFC" }
+  ];
+  groups: { image: string, name: string }[][] = [];
+  currentGroupIndex = 0;
+  currentSlideIndex = 0;
+  itemsPerGroup = 4;
+
+  ngOnInit(): void {
+    this.updateGroups();
+  }
+
+  updateGroups(): void {
+    this.groups = [];
+    for (let i = 0; i < this.brands.length; i += this.itemsPerGroup) {
+      this.groups.push(this.brands.slice(i, i + this.itemsPerGroup));
+    }
+  }
+
+  nextSlide(): void {
+    const totalSlides = this.groups[this.currentGroupIndex].length;
+    if (this.currentSlideIndex + 4 < totalSlides) {
+      this.currentSlideIndex += 4;
+    } else {
+      this.currentSlideIndex = 0;
+      this.nextGroup();
+    }
+  }
+
+  prevSlide(): void {
+    const totalSlides = this.groups[this.currentGroupIndex].length;
+    if (this.currentSlideIndex > 0) {
+      this.currentSlideIndex -= 4;
+    } else {
+      this.currentSlideIndex = totalSlides - 4;
+      this.prevGroup();
+    }
+  }
+
+  nextGroup(): void {
+    if (this.currentGroupIndex + 1 < this.groups.length) {
+      this.currentGroupIndex++;
+    }
+  }
+
+  prevGroup(): void {
+    if (this.currentGroupIndex > 0) {
+      this.currentGroupIndex--;
+    }
+  }
+}
