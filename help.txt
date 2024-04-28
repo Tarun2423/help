@@ -240,3 +240,162 @@ export class ApiService {
 .prev-btn1 {
   left: 0;
 }
+
+
+
+
+
+/////////testtt
+
+
+.Brands {
+  width: 100%;
+  margin: auto;
+  padding: 20px;
+}
+
+.heading {
+  text-align: center;
+}
+
+.Res {
+  position: relative;
+  overflow: hidden;
+}
+
+.wrapper {
+  display: flex;
+  transition: transform 0.5s ease;
+}
+
+.group {
+  display: flex;
+}
+
+.popular {
+  flex: 0 0 25%;
+  max-width: 25%;
+  padding: 10px;
+  box-sizing: border-box;
+  text-align: center;
+  transition: opacity 0.3s ease;
+}
+
+.popular img {
+  width: 100%;
+  height: auto;
+  border-radius: 5px;
+}
+
+.popular p {
+  margin-top: 10px;
+  font-size: 16px;
+}
+
+.next-btn1,
+.prev-btn1 {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  cursor: pointer;
+}
+
+.next-btn1 {
+  right: 10px;
+}
+
+.prev-btn1 {
+  left: 10px;
+}
+
+
+
+<div class="Brands">
+  <div class="heading">
+    <span style="font-size: 30px;color:#1c1c1c;margin-top: 30px;">Top brands for you</span>
+  </div>
+  <div class="Res">
+    <div class="wrapper">
+      <div class="group" *ngFor="let group of groups; let i = index" [class.active]="i === currentGroupIndex">
+        <div class="popular" *ngFor="let brand of group; let j = index" [class.active]="j === currentSlideIndex">
+          <img [src]="brand.image" alt="{{ brand.name }}" />
+          <p>{{ brand.name }}</p>
+        </div>
+      </div>
+    </div>
+    <button class="next-btn1" (click)="nextSlide()">Next</button>
+    <button class="prev-btn1" (click)="prevSlide()">Previous</button>
+  </div>
+</div>
+
+
+import { Component, OnInit } from '@angular/core';
+
+@Component({
+  selector: 'app-brands-slider',
+  templateUrl: './brands-slider.component.html',
+  styleUrls: ['./brands-slider.component.css']
+})
+export class BrandsSliderComponent implements OnInit {
+  brands: { image: string, name: string }[] = [
+    { image: 'mc.jpg', name: 'MC-Donalds' },
+    { image: 'dom.jpg', name: 'Dominos' },
+    { image: 'a2b.jpg', name: 'A2B' },
+    { image: 'ss.jpg', name: 'SS Hyderabad Biryani' },
+    { image: 'anj.jpg', name: 'Anjappar' },
+    { image: 'san.jpg', name: 'Sangeetha' },
+    { image: 'bur.jpg', name: 'Burger Kings' },
+    { image: 'kfc.jpg', name: 'KFC' }
+  ];
+  groups: { image: string, name: string }[][] = [];
+  currentGroupIndex = 0;
+  currentSlideIndex = 0;
+  itemsPerGroup = 4;
+
+  constructor() { }
+
+  ngOnInit(): void {
+    this.updateGroups();
+  }
+
+  updateGroups(): void {
+    this.groups = [];
+    for (let i = 0; i < this.brands.length; i += this.itemsPerGroup) {
+      this.groups.push(this.brands.slice(i, i + this.itemsPerGroup));
+    }
+  }
+
+  nextSlide(): void {
+    if (this.currentSlideIndex + 1 < this.itemsPerGroup) {
+      this.currentSlideIndex++;
+    } else {
+      this.currentSlideIndex = 0;
+      this.nextGroup();
+    }
+  }
+
+  prevSlide(): void {
+    if (this.currentSlideIndex > 0) {
+      this.currentSlideIndex--;
+    } else {
+      this.currentSlideIndex = this.itemsPerGroup - 1;
+      this.prevGroup();
+    }
+  }
+
+  nextGroup(): void {
+    if (this.currentGroupIndex + 1 < this.groups.length) {
+      this.currentGroupIndex++;
+    }
+  }
+
+  prevGroup(): void {
+    if (this.currentGroupIndex > 0) {
+      this.currentGroupIndex--;
+    }
+  }
+}
