@@ -88,3 +88,21 @@ export class BrandsSliderComponent implements OnInit {
     }
   }
 }
+
+
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class ApiService {
+
+  constructor(private http: HttpClient) { }
+
+  getImages(url: string): Observable<string[]> {
+    return this.http.get<string[]>(url);
+  }
+}
+
