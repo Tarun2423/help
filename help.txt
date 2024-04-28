@@ -399,3 +399,78 @@ export class BrandsSliderComponent implements OnInit {
     }
   }
 }
+
+//last
+
+<div class="Brands">
+  <div class="heading">
+    <span style="font-size: 30px;color:#1c1c1c;margin-top: 30px;">Top brands for you</span>
+  </div>
+  <div class="Res">
+    <div class="wrapper">
+      <div class="group" *ngFor="let group of groups; let i = index" [class.active]="i === currentGroupIndex">
+        <div class="popular" *ngFor="let brand of group; let j = index" [class.active]="j === currentSlideIndex">
+          <img [src]="brand.image" alt="Brand {{ i * itemsPerGroup + j + 1 }}" />
+          <p>{{ brand.name }}</p>
+        </div>
+      </div>
+    </div>
+    <button class="next-btn1" (click)="nextSlide()">Next</button>
+    <button class="prev-btn1" (click)="prevSlide()">Previous</button>
+  </div>
+</div>
+
+  brands = [
+    { image: "mc.jpg", name: "MC-Donalds" },
+    { image: "dom.jpg", name: "Dominos" },
+    { image: "a2b.jpg", name: "A2B" },
+    { image: "ss.jpg", name: "SS Hyderabad Biryani" },
+    { image: "anj.jpg", name: "Anjappar" },
+    { image: "san.jpg", name: "Sangeetha" },
+    { image: "bur.jpg", name: "Burger Kings" },
+    { image: "kfc.jpg", name: "KFC" }
+  ];
+  groups: { image: string, name: string }[][] = [];
+  currentGroupIndex = 0;
+  currentSlideIndex = 0;
+  itemsPerGroup = 4;
+
+  ngOnInit(): void {
+    this.updateGroups();
+  }
+
+  updateGroups(): void {
+    this.groups = [];
+    for (let i = 0; i < this.brands.length; i += this.itemsPerGroup) {
+      this.groups.push(this.brands.slice(i, i + this.itemsPerGroup));
+    }
+  }
+
+  nextSlide(): void {
+    if (this.currentSlideIndex + 4 < this.groups[this.currentGroupIndex].length) {
+      this.currentSlideIndex += 4;
+    } else {
+      if (this.currentGroupIndex + 1 < this.groups.length) {
+        this.currentGroupIndex++;
+        this.currentSlideIndex = 0;
+      } else {
+        this.currentGroupIndex = 0;
+        this.currentSlideIndex = 0;
+      }
+    }
+  }
+
+  prevSlide(): void {
+    if (this.currentSlideIndex > 0) {
+      this.currentSlideIndex -= 4;
+    } else {
+      if (this.currentGroupIndex > 0) {
+        this.currentGroupIndex--;
+        this.currentSlideIndex = this.groups[this.currentGroupIndex].length - 4;
+      } else {
+        this.currentGroupIndex = this.groups.length - 1;
+        this.currentSlideIndex = this.groups[this.currentGroupIndex].length - 4;
+      }
+    }
+  }
+}
