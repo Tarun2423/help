@@ -17,7 +17,6 @@
 </div>
 
 
-
 import { Component, OnInit } from '@angular/core';
 import { ApiService } from './api.service';
 
@@ -28,6 +27,7 @@ import { ApiService } from './api.service';
 })
 export class BrandsSliderComponent implements OnInit {
   brands: { image: string, name: string }[] = [];
+  groups: { image: string, name: string }[][] = [];
   currentGroupIndex = 0;
   currentSlideIndex = 0;
   itemsPerGroup = 4;
@@ -62,6 +62,7 @@ export class BrandsSliderComponent implements OnInit {
     if (this.currentSlideIndex + 1 < this.itemsPerGroup) {
       this.currentSlideIndex++;
     } else {
+      this.currentSlideIndex = 0;
       this.nextGroup();
     }
   }
@@ -70,6 +71,7 @@ export class BrandsSliderComponent implements OnInit {
     if (this.currentSlideIndex > 0) {
       this.currentSlideIndex--;
     } else {
+      this.currentSlideIndex = this.itemsPerGroup - 1;
       this.prevGroup();
     }
   }
@@ -77,14 +79,12 @@ export class BrandsSliderComponent implements OnInit {
   nextGroup(): void {
     if (this.currentGroupIndex + 1 < this.groups.length) {
       this.currentGroupIndex++;
-      this.currentSlideIndex = 0;
     }
   }
 
   prevGroup(): void {
     if (this.currentGroupIndex > 0) {
       this.currentGroupIndex--;
-      this.currentSlideIndex = 0;
     }
   }
 }
