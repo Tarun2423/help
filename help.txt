@@ -167,3 +167,76 @@ export class ApiService {
 .active {
   /* Add styles for active elements here, e.g., border or box-shadow */
 }
+
+
+
+
+
+
+
+
+
+
+
+
+.Brands {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.heading {
+  text-align: center;
+}
+
+.Res {
+  position: relative;
+  overflow-x: hidden;
+}
+
+.wrapper {
+  display: flex;
+}
+
+.group {
+  display: flex;
+  transition: transform 0.3s ease;
+}
+
+.popular {
+  flex: 0 0 calc(33.33% - 20px); /* Adjust the width to fit three items per slide */
+  padding: 0 10px;
+  text-align: center;
+}
+
+.popular img {
+  width: 100%; /* Adjust as needed */
+  height: auto; /* Maintain aspect ratio */
+  border-radius: 5px;
+}
+
+.popular p {
+  margin-top: 5px;
+  font-size: 14px;
+}
+
+.next-btn1,
+.prev-btn1 {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border: none;
+  background-color: transparent;
+  color: #333;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.next-btn1 {
+  right: 0;
+}
+
+.prev-btn1 {
+  left: 0;
+}
