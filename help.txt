@@ -273,7 +273,7 @@ export class ApiService {
 }
 
 .popular {
-  flex: 0 0 25%;
+  flex: 0 0 25%; /* 4 items per group */
   max-width: 25%;
   padding: 10px;
   box-sizing: border-box;
@@ -313,13 +313,12 @@ export class ApiService {
 }
 
 
-
 <div class="Brands">
   <div class="heading">
     <span style="font-size: 30px;color:#1c1c1c;margin-top: 30px;">Top brands for you</span>
   </div>
   <div class="Res">
-    <div class="wrapper">
+    <div class="wrapper" [style.transform]="'translateX(-' + currentGroupIndex * (100 / groups.length) + '%)'">
       <div class="group" *ngFor="let group of groups; let i = index" [class.active]="i === currentGroupIndex">
         <div class="popular" *ngFor="let brand of group; let j = index" [class.active]="j === currentSlideIndex">
           <img [src]="brand.image" alt="{{ brand.name }}" />
@@ -341,20 +340,20 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./brands-slider.component.css']
 })
 export class BrandsSliderComponent implements OnInit {
-  brands: { image: string, name: string }[] = [
-    { image: 'mc.jpg', name: 'MC-Donalds' },
-    { image: 'dom.jpg', name: 'Dominos' },
-    { image: 'a2b.jpg', name: 'A2B' },
-    { image: 'ss.jpg', name: 'SS Hyderabad Biryani' },
-    { image: 'anj.jpg', name: 'Anjappar' },
-    { image: 'san.jpg', name: 'Sangeetha' },
-    { image: 'bur.jpg', name: 'Burger Kings' },
-    { image: 'kfc.jpg', name: 'KFC' }
+ brands = [
+    { image: "mc.jpg", name: "MC-Donalds" },
+    { image: "dom.jpg", name: "Dominos" },
+    { image: "a2b.jpg", name: "A2B" },
+    { image: "ss.jpg", name: "SS Hyderabad Biryani" },
+    { image: "anj.jpg", name: "Anjappar" },
+    { image: "san.jpg", name: "Sangeetha" },
+    { image: "bur.jpg", name: "Burger Kings" },
+    { image: "kfc.jpg", name: "KFC" }
   ];
+
   groups: { image: string, name: string }[][] = [];
   currentGroupIndex = 0;
   currentSlideIndex = 0;
-  itemsPerGroup = 4;
 
   constructor() { }
 
@@ -364,13 +363,14 @@ export class BrandsSliderComponent implements OnInit {
 
   updateGroups(): void {
     this.groups = [];
-    for (let i = 0; i < this.brands.length; i += this.itemsPerGroup) {
-      this.groups.push(this.brands.slice(i, i + this.itemsPerGroup));
+    const itemsPerGroup = 4;
+    for (let i = 0; i < this.brands.length; i += itemsPerGroup) {
+      this.groups.push(this.brands.slice(i, i + itemsPerGroup));
     }
   }
 
   nextSlide(): void {
-    if (this.currentSlideIndex + 1 < this.itemsPerGroup) {
+    if (this.currentSlideIndex + 1 < 4) {
       this.currentSlideIndex++;
     } else {
       this.currentSlideIndex = 0;
@@ -382,7 +382,7 @@ export class BrandsSliderComponent implements OnInit {
     if (this.currentSlideIndex > 0) {
       this.currentSlideIndex--;
     } else {
-      this.currentSlideIndex = this.itemsPerGroup - 1;
+      this.currentSlideIndex = 3;
       this.prevGroup();
     }
   }
