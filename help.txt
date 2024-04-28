@@ -106,3 +106,64 @@ export class ApiService {
   }
 }
 
+
+
+
+.Brands {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.heading {
+  margin-top: 30px;
+}
+
+.Res {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.wrapper {
+  display: flex;
+  flex-wrap: nowrap; /* Ensures items stay in a single row */
+  overflow-x: hidden; /* Hide overflow */
+}
+
+.group {
+  display: flex;
+}
+
+.popular {
+  width: 25%; /* Each brand takes up 25% of the wrapper's width */
+  padding: 10px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.popular img {
+  width: 100%;
+  border-radius: 5px;
+}
+
+.next-btn1,
+.prev-btn1 {
+  margin-top: 10px;
+  background-color: #ccc;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.next-btn1:hover,
+.prev-btn1:hover {
+  background-color: #bbb;
+}
+
+.active {
+  /* Add styles for active elements here, e.g., border or box-shadow */
+}
