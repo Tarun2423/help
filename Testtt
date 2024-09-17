@@ -1,5 +1,5 @@
-import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,6 +17,9 @@ public class HolidayDataServiceImplTest {
 
     @Mock
     private WebClient holidayWebClient;
+
+    @Mock
+    private WebClient.RequestHeadersUriSpec<?> requestHeadersUriSpec;
 
     @Mock
     private WebClient.RequestHeadersSpec<?> requestHeadersSpec;
@@ -39,12 +42,12 @@ public class HolidayDataServiceImplTest {
         LocalDate now = LocalDate.now();
         String startDate = now.toString();
         String endDate = now.withDayOfYear(now.lengthOfYear()).toString();
-        
+
         HolidayDTO mockHolidayDTO = new HolidayDTO();
         mockHolidayDTO.setHolidayList(List.of("2024-01-01", "2024-12-25"));
 
-        when(holidayWebClient.get()).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.uri(uriBuilder -> uriBuilder.path("/bankHolidays")
+        when(holidayWebClient.get()).thenReturn(requestHeadersUriSpec);
+        when(requestHeadersUriSpec.uri(uriBuilder -> uriBuilder.path("/bankHolidays")
                 .queryParam("startDate", startDate)
                 .queryParam("endDate", endDate)
                 .queryParam("currencyCode", currencyCode)
@@ -70,12 +73,12 @@ public class HolidayDataServiceImplTest {
         LocalDate now = LocalDate.now();
         String startDate = now.toString();
         String endDate = now.withDayOfYear(now.lengthOfYear()).toString();
-        
+
         HolidayDTO mockHolidayDTO = new HolidayDTO();
         mockHolidayDTO.setHolidayList(List.of());
 
-        when(holidayWebClient.get()).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.uri(uriBuilder -> uriBuilder.path("/bankHolidays")
+        when(holidayWebClient.get()).thenReturn(requestHeadersUriSpec);
+        when(requestHeadersUriSpec.uri(uriBuilder -> uriBuilder.path("/bankHolidays")
                 .queryParam("startDate", startDate)
                 .queryParam("endDate", endDate)
                 .queryParam("currencyCode", currencyCode)
