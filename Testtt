@@ -1,3 +1,40 @@
+@Mock
+private UriBuilder uriBuilder;
+
+@Test
+public void getHolidayforCurrency_ShouldReturnListOfHolidays() {
+    // Arrange
+    String currencyCode = "USD";
+    String startDate = LocalDate.now().toString();
+    String endDate = LocalDate.now().withYear(LocalDate.now().getYear()).withDayOfYear(365).toString();
+    
+    // Mock the UriBuilder
+    when(requestHeadersUriSpec.uri(any())).thenAnswer(invocation -> {
+        // Simulate the lambda that builds the URI
+        UriBuilder uriBuilder = mock(UriBuilder.class);
+        when(uriBuilder.path(anyString())).thenReturn(uriBuilder);
+        when(uriBuilder.queryParam(anyString(), anyString())).thenReturn(uriBuilder);
+        when(uriBuilder.build()).thenReturn(URI.create("/mockedUri"));
+        return requestHeadersSpec;
+    });
+
+    // Mock the rest of the WebClient call chain
+    HolidayDTO mockHolidayDTO = new HolidayDTO();
+    mockHolidayDTO.setHolidayList(Arrays.asList("2023-12-25", "2024-01-01"));
+    
+    when(requestHeadersSpec.accept(MediaType.APPLICATION_JSON)).thenReturn(requestHeadersSpec);
+    when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+    when(responseSpec.bodyToMono(HolidayDTO.class)).thenReturn(Mono.just(mockHolidayDTO));
+
+    // Act
+    List<Holiday> result = holidayDataService.getHolidayforCurrency(currencyCode);
+
+    // Assert
+    assertNotNull(result);
+    assertEquals(2, result.size());
+    assertEquals("2023-12-25", result.get(0).getDate());
+    assertEquals("USD", result.get(0).getCurrencyCode());
+}
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
