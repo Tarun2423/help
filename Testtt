@@ -1,26 +1,5 @@
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.http.MediaType;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClient.RequestHeadersUriSpec;
-import org.springframework.web.reactive.function.client.WebClient.RequestHeadersSpec;
-import org.springframework.web.reactive.function.client.WebClient.ResponseSpec;
-import reactor.core.publisher.Mono;
-
-import java.net.URI;
-import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import static org.mockito.Mockito.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.anyString;
 
 @RunWith(MockitoJUnitRunner.class)
 public class HolidayDataServiceImplTest {
@@ -29,10 +8,10 @@ public class HolidayDataServiceImplTest {
     private WebClient holidayWebClient;
 
     @Mock
-    private WebClient.RequestHeadersUriSpec requestHeadersUriSpec;
+    private WebClient.RequestHeadersUriSpec<?> requestHeadersUriSpec;  // IMPORTANT: Use wildcard '?'
 
     @Mock
-    private WebClient.RequestHeadersSpec requestHeadersSpec;
+    private WebClient.RequestHeadersSpec<?> requestHeadersSpec;
 
     @Mock
     private WebClient.ResponseSpec responseSpec;
@@ -50,19 +29,18 @@ public class HolidayDataServiceImplTest {
         // Arrange
         String currencyCode = "USD";
         String startDate = LocalDate.now().toString();
-        String endDate = LocalDate.now().withYear(LocalDate.now().getYear()).withDayOfYear(365).toString();
+        String endDate = LocalDate.now().withDayOfYear(365).toString();
 
-        // Mock the WebClient call chain
         HolidayDTO mockHolidayDTO = new HolidayDTO();
         mockHolidayDTO.setHolidayList(Arrays.asList("2023-12-25", "2024-01-01"));
 
-        // Ensure the WebClient chain is fully mocked
-        when(holidayWebClient.get()).thenReturn(requestHeadersUriSpec); // Mock the GET method
-        
-        // IMPORTANT: Explicitly mock the URI part
-        when(requestHeadersUriSpec.uri(any())).thenReturn(requestHeadersSpec);
+        // Mock the WebClient chain
+        when(holidayWebClient.get()).thenReturn(requestHeadersUriSpec);
 
-        // Mock other methods in the chain
+        // Mock the `uri()` function properly
+        when(requestHeadersUriSpec.uri(any(Function.class))).thenReturn(requestHeadersSpec);  // Fixing uri() mock
+
+        // Mock the remaining WebClient calls
         when(requestHeadersSpec.accept(MediaType.APPLICATION_JSON)).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(HolidayDTO.class)).thenReturn(Mono.just(mockHolidayDTO));
