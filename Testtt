@@ -1,0 +1,98 @@
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+public class CurrencyServiceTest {
+
+    @Mock
+    private Marshaller marshaller;
+
+    @InjectMocks
+    private CurrencyService currencyService; // Assuming your method is inside a service class
+
+    private InputStream mockInputStream;
+    private CurrencyRoot mockCurrencyRoot;
+
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this); // Initialize mocks
+
+        // Initialize mock objects and default behaviors
+        mockInputStream = mock(InputStream.class);
+        mockCurrencyRoot = mock(CurrencyRoot.class);
+
+        List<CurrencyDetail> currencyDetails = new ArrayList<>();
+        currencyDetails.add(new CurrencyDetail()); // Add mock CurrencyDetail
+        CurrencyList currencyList = new CurrencyList(currencyDetails);
+
+        List<CtryCcyLink> ctryCcyLinks = new ArrayList<>();
+        ctryCcyLinks.add(new CtryCcyLink()); // Add mock CtryCcyLink
+        CtryCurrList ctryCurrList = new CtryCurrList(ctryCcyLinks);
+
+        // Mock marshaller behavior
+        when(marshaller.unmarshalCurrencyRoot(mockInputStream)).thenReturn(mockCurrencyRoot);
+
+        // Mock the returned data from the root
+        when(mockCurrencyRoot.getCurrList()).thenReturn(currencyList);
+        when(mockCurrencyRoot.getCtrycurrList()).thenReturn(ctryCurrList);
+    }
+
+    @Test
+    public void testGetCurrencyDetailsFromERECA_Success() {
+        // Call the method to be tested
+        CountryCurrencyDTO result = currencyService.getCurrencyDetailsFromERECA(mockInputStream);
+
+        // Assert that the result is not null
+        assertNotNull(result);
+
+        // Verify that mappings have occurred correctly
+        assertNotNull(result.getCurrencyDTO());
+        assertNotNull(result.getCtryCcydto());
+
+        // Verify that marshaller was called once
+        verify(marshaller, times(1)).unmarshalCurrencyRoot(mockInputStream);
+
+        // Additional assertions or verifications can be done here
+    }
+
+    @Test
+    public void testGetCurrencyDetailsFromERECA_EmptyLists() {
+        // Modify behavior to return empty lists
+        when(mockCurrencyRoot.getCurrList().getCurrencyDetail()).thenReturn(new ArrayList<>());
+        when(mockCurrencyRoot.getCtrycurrList().getCtryCcyLink()).thenReturn(new ArrayList<>());
+
+        // Call the method
+        CountryCurrencyDTO result = currencyService.getCurrencyDetailsFromERECA(mockInputStream);
+
+        // Assert that the result is not null and DTOs are initialized but empty
+        assertNotNull(result);
+        assertTrue(result.getCurrencyDTO().getCurrencyList().isEmpty());
+        assertTrue(result.getCtryCcydto().getCtryCcyList().isEmpty());
+
+        // Verify that marshaller was called once
+        verify(marshaller, times(1)).unmarshalCurrencyRoot(mockInputStream);
+    }
+
+    @Test
+    public void testGetCurrencyDetailsFromERECA_NullRoot() {
+        // Mock marshaller to return null
+        when(marshaller.unmarshalCurrencyRoot(mockInputStream)).thenReturn(null);
+
+        // Call the method
+        Exception exception = assertThrows(NullPointerException.class, () -> {
+            currencyService.getCurrencyDetailsFromERECA(mockInputStream);
+        });
+
+        // Optionally check the exception message or behavior
+        assertNotNull(exception);
+    }
+}
