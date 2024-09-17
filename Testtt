@@ -1,107 +1,94 @@
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
-import java.io.InputStream;
-import java.util.ArrayList;
+import java.time.LocalDate;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
-public class CurrencyServiceTest {
+public class HolidayDataServiceImplTest {
 
     @Mock
-    private Marshaller marshaller;
+    private WebClient holidayWebClient;
+
+    @Mock
+    private WebClient.RequestHeadersSpec<?> requestHeadersSpec;
+
+    @Mock
+    private WebClient.ResponseSpec responseSpec;
 
     @InjectMocks
-    private CurrencyService currencyService; // Assuming your method is inside a service class
-
-    private InputStream mockInputStream;
-    private CurrencyRoot mockCurrencyRoot;
-    private KDEVIDETCURRLIST mockCurrList;
-    private KDEVIDETLINKCOUNTRYCURRENCYLIST mockCtrycurrList;
+    private HolidayDataServiceImpl holidayDataService;
 
     @BeforeEach
-    public void setUp() {
-        MockitoAnnotations.openMocks(this); // Initialize mocks
-
-        // Initialize mock objects
-        mockInputStream = mock(InputStream.class);
-        mockCurrencyRoot = mock(CurrencyRoot.class); // Mock CurrencyRoot object
-        mockCurrList = mock(KDEVIDETCURRLIST.class); // Mock KDEVIDETCURRLIST object
-        mockCtrycurrList = mock(KDEVIDETLINKCOUNTRYCURRENCYLIST.class); // Mock KDEVIDETLINKCOUNTRYCURRENCYLIST object
-
-        // Mock the marshaller to return the CurrencyRoot object
-        when(marshaller.unmarshalCurrencyRoot(mockInputStream)).thenReturn(mockCurrencyRoot);
-
-        // Set up the mockCurrList and mockCtrycurrList objects
-        List<KDEVIDETCURR> currencyDetails = new ArrayList<>();
-        currencyDetails.add(new KDEVIDETCURR("USD", "US Dollar", "Dollars"));
-        when(mockCurrList.getCurrencyDetail()).thenReturn(currencyDetails);
-
-        List<KDEVIDETLINKCOUNTRYCURRENCY> ctryCcyLinks = new ArrayList<>();
-        ctryCcyLinks.add(new KDEVIDETLINKCOUNTRYCURRENCY("USA", "USD"));
-        when(mockCtrycurrList.getCtryCcyLink()).thenReturn(ctryCcyLinks);
-
-        // Ensure that the mockCurrencyRoot returns these non-null objects
-        when(mockCurrencyRoot.getCurrList()).thenReturn(mockCurrList);
-        when(mockCurrencyRoot.getCtrycurrList()).thenReturn(mockCtrycurrList);
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    public void testGetCurrencyDetailsFromERECA_Success() {
-        // Call the method to be tested
-        CountryCurrencyDTO result = currencyService.getCurrencyDetailsFromERECA(mockInputStream);
+    void testGetHolidayForCurrency() {
+        // Arrange
+        String currencyCode = "USD";
+        LocalDate now = LocalDate.now();
+        String startDate = now.toString();
+        String endDate = now.withDayOfYear(now.lengthOfYear()).toString();
+        
+        HolidayDTO mockHolidayDTO = new HolidayDTO();
+        mockHolidayDTO.setHolidayList(List.of("2024-01-01", "2024-12-25"));
 
-        // Assert that the result is not null
-        assertNotNull(result);
+        when(holidayWebClient.get()).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.uri(uriBuilder -> uriBuilder.path("/bankHolidays")
+                .queryParam("startDate", startDate)
+                .queryParam("endDate", endDate)
+                .queryParam("currencyCode", currencyCode)
+                .build())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.accept(MediaType.APPLICATION_JSON)).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(HolidayDTO.class)).thenReturn(Mono.just(mockHolidayDTO));
 
-        // Verify that the CurrencyDTO and CtryCcyDTO objects are not null
-        assertNotNull(result.getCurrencyDTO());
-        assertNotNull(result.getCtryCcydto());
+        // Act
+        List<Holiday> holidays = holidayDataService.getHolidayForCurrency(currencyCode);
 
-        // Verify that marshaller was called once
-        verify(marshaller, times(1)).unmarshalCurrencyRoot(mockInputStream);
-
-        // Verify that the currency details and country-currency links were mapped correctly
-        assertFalse(result.getCurrencyDTO().getCurrencyList().isEmpty());
-        assertFalse(result.getCtryCcydto().getCtryCcyList().isEmpty());
+        // Assert
+        assertNotNull(holidays);
+        assertEquals(2, holidays.size());
+        assertEquals("2024-01-01", holidays.get(0).getDate());
+        assertEquals(currencyCode, holidays.get(0).getCurrencyCode());
     }
 
     @Test
-    public void testGetCurrencyDetailsFromERECA_EmptyLists() {
-        // Modify behavior to return empty lists for KDEVIDETCURRLIST and KDEVIDETLINKCOUNTRYCURRENCYLIST
-        when(mockCurrList.getCurrencyDetail()).thenReturn(new ArrayList<>());
-        when(mockCtrycurrList.getCtryCcyLink()).thenReturn(new ArrayList<>());
+    void testGetHolidayForCurrencyNoHolidays() {
+        // Arrange
+        String currencyCode = "USD";
+        LocalDate now = LocalDate.now();
+        String startDate = now.toString();
+        String endDate = now.withDayOfYear(now.lengthOfYear()).toString();
+        
+        HolidayDTO mockHolidayDTO = new HolidayDTO();
+        mockHolidayDTO.setHolidayList(List.of());
 
-        // Call the method
-        CountryCurrencyDTO result = currencyService.getCurrencyDetailsFromERECA(mockInputStream);
+        when(holidayWebClient.get()).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.uri(uriBuilder -> uriBuilder.path("/bankHolidays")
+                .queryParam("startDate", startDate)
+                .queryParam("endDate", endDate)
+                .queryParam("currencyCode", currencyCode)
+                .build())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.accept(MediaType.APPLICATION_JSON)).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(HolidayDTO.class)).thenReturn(Mono.just(mockHolidayDTO));
 
-        // Assert that the result is not null
-        assertNotNull(result);
+        // Act
+        List<Holiday> holidays = holidayDataService.getHolidayForCurrency(currencyCode);
 
-        // Assert that the CurrencyDTO and CtryCcyDTO lists are empty
-        assertTrue(result.getCurrencyDTO().getCurrencyList().isEmpty());
-        assertTrue(result.getCtryCcydto().getCtryCcyList().isEmpty());
-
-        // Verify that marshaller was called once
-        verify(marshaller, times(1)).unmarshalCurrencyRoot(mockInputStream);
-    }
-
-    @Test
-    public void testGetCurrencyDetailsFromERECA_NullRoot() {
-        // Mock the marshaller to return null (simulating an unmarshalling failure)
-        when(marshaller.unmarshalCurrencyRoot(mockInputStream)).thenReturn(null);
-
-        // Call the method and expect an IllegalArgumentException
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            currencyService.getCurrencyDetailsFromERECA(mockInputStream);
-        });
-
-        // Optionally check the exception message
-        assertEquals("CurrencyRoot is null after unmarshalling.", exception.getMessage());
+        // Assert
+        assertNotNull(holidays);
+        assertTrue(holidays.isEmpty());
     }
 }
