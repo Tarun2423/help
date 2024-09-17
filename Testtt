@@ -21,29 +21,34 @@ public class CurrencyServiceTest {
 
     private InputStream mockInputStream;
     private CurrencyRoot mockCurrencyRoot;
+    private KDEVIDETCURRLIST mockCurrList;
+    private KDEVIDETLINKCOUNTRYCURRENCYLIST mockCtrycurrList;
 
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this); // Initialize mocks
 
-        // Initialize mock objects and default behaviors
+        // Initialize mock objects
         mockInputStream = mock(InputStream.class);
-        mockCurrencyRoot = mock(CurrencyRoot.class);
+        mockCurrencyRoot = mock(CurrencyRoot.class); // Mock CurrencyRoot object
+        mockCurrList = mock(KDEVIDETCURRLIST.class); // Mock KDEVIDETCURRLIST object
+        mockCtrycurrList = mock(KDEVIDETLINKCOUNTRYCURRENCYLIST.class); // Mock KDEVIDETLINKCOUNTRYCURRENCYLIST object
 
-        List<CurrencyDetail> currencyDetails = new ArrayList<>();
-        currencyDetails.add(new CurrencyDetail()); // Add mock CurrencyDetail
-        CurrencyList currencyList = new CurrencyList(currencyDetails);
-
-        List<CtryCcyLink> ctryCcyLinks = new ArrayList<>();
-        ctryCcyLinks.add(new CtryCcyLink()); // Add mock CtryCcyLink
-        CtryCurrList ctryCurrList = new CtryCurrList(ctryCcyLinks);
-
-        // Mock marshaller behavior
+        // Mock the marshaller to return the CurrencyRoot object
         when(marshaller.unmarshalCurrencyRoot(mockInputStream)).thenReturn(mockCurrencyRoot);
 
-        // Mock the returned data from the root
-        when(mockCurrencyRoot.getCurrList()).thenReturn(currencyList);
-        when(mockCurrencyRoot.getCtrycurrList()).thenReturn(ctryCurrList);
+        // Set up the mockCurrList and mockCtrycurrList objects
+        List<KDEVIDETCURR> currencyDetails = new ArrayList<>();
+        currencyDetails.add(new KDEVIDETCURR("USD", "US Dollar", "Dollars"));
+        when(mockCurrList.getCurrencyDetail()).thenReturn(currencyDetails);
+
+        List<KDEVIDETLINKCOUNTRYCURRENCY> ctryCcyLinks = new ArrayList<>();
+        ctryCcyLinks.add(new KDEVIDETLINKCOUNTRYCURRENCY("USA", "USD"));
+        when(mockCtrycurrList.getCtryCcyLink()).thenReturn(ctryCcyLinks);
+
+        // Ensure that the mockCurrencyRoot returns these non-null objects
+        when(mockCurrencyRoot.getCurrList()).thenReturn(mockCurrList);
+        when(mockCurrencyRoot.getCtrycurrList()).thenReturn(mockCtrycurrList);
     }
 
     @Test
@@ -54,27 +59,31 @@ public class CurrencyServiceTest {
         // Assert that the result is not null
         assertNotNull(result);
 
-        // Verify that mappings have occurred correctly
+        // Verify that the CurrencyDTO and CtryCcyDTO objects are not null
         assertNotNull(result.getCurrencyDTO());
         assertNotNull(result.getCtryCcydto());
 
         // Verify that marshaller was called once
         verify(marshaller, times(1)).unmarshalCurrencyRoot(mockInputStream);
 
-        // Additional assertions or verifications can be done here
+        // Verify that the currency details and country-currency links were mapped correctly
+        assertFalse(result.getCurrencyDTO().getCurrencyList().isEmpty());
+        assertFalse(result.getCtryCcydto().getCtryCcyList().isEmpty());
     }
 
     @Test
     public void testGetCurrencyDetailsFromERECA_EmptyLists() {
-        // Modify behavior to return empty lists
-        when(mockCurrencyRoot.getCurrList().getCurrencyDetail()).thenReturn(new ArrayList<>());
-        when(mockCurrencyRoot.getCtrycurrList().getCtryCcyLink()).thenReturn(new ArrayList<>());
+        // Modify behavior to return empty lists for KDEVIDETCURRLIST and KDEVIDETLINKCOUNTRYCURRENCYLIST
+        when(mockCurrList.getCurrencyDetail()).thenReturn(new ArrayList<>());
+        when(mockCtrycurrList.getCtryCcyLink()).thenReturn(new ArrayList<>());
 
         // Call the method
         CountryCurrencyDTO result = currencyService.getCurrencyDetailsFromERECA(mockInputStream);
 
-        // Assert that the result is not null and DTOs are initialized but empty
+        // Assert that the result is not null
         assertNotNull(result);
+
+        // Assert that the CurrencyDTO and CtryCcyDTO lists are empty
         assertTrue(result.getCurrencyDTO().getCurrencyList().isEmpty());
         assertTrue(result.getCtryCcydto().getCtryCcyList().isEmpty());
 
@@ -84,15 +93,15 @@ public class CurrencyServiceTest {
 
     @Test
     public void testGetCurrencyDetailsFromERECA_NullRoot() {
-        // Mock marshaller to return null
+        // Mock the marshaller to return null (simulating an unmarshalling failure)
         when(marshaller.unmarshalCurrencyRoot(mockInputStream)).thenReturn(null);
 
-        // Call the method
-        Exception exception = assertThrows(NullPointerException.class, () -> {
+        // Call the method and expect an IllegalArgumentException
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
             currencyService.getCurrencyDetailsFromERECA(mockInputStream);
         });
 
-        // Optionally check the exception message or behavior
-        assertNotNull(exception);
+        // Optionally check the exception message
+        assertEquals("CurrencyRoot is null after unmarshalling.", exception.getMessage());
     }
 }
