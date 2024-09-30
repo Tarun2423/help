@@ -1,57 +1,27 @@
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+List<PurposeCode> checkList = 
+    IntStream.range(1, datatypeSheet.getLastRowNum()) // Iterate over the rows
+    .mapToObj(i -> datatypeSheet.getRow(i))           // Map each index to a row
+    .filter(row -> row != null)                       // Filter out null rows
+    .filter(row -> {
+        Cell cell0 = row.getCell(0);
+        Cell cell1 = row.getCell(1);
+        return !(cell0 == null || cell0.getStringCellValue().trim().isEmpty()) &&
+               !(cell1 == null || cell1.getStringCellValue().trim().isEmpty());
+    }) // Filter rows where both columns 0 and 1 are not null and not empty
+    .map(row -> {
+        PurposeCode checks = new PurposeCode();
 
-@RunWith(MockitoJUnitRunner.class)
-public class HolidayDataServiceImplTest {
+        // Set Iso3aCountryCode if column 1 is not null, otherwise set it to "*"
+        checks.setIso3aCountryCode(row.getCell(1) != null ? row.getCell(1).getStringCellValue() : "*");
 
-    @Mock
-    private WebClient holidayWebClient;
+        // Set PurposeCode if column 2 is not null
+        if (ValidationUtil.isNotNull(row.getCell(2))) {
+            String s = row.getCell(2).getCellTypeEnum() == CellType.STRING
+                ? row.getCell(2).getStringCellValue().trim()
+                : String.valueOf(row.getCell(2).getNumericCellValue());
+            checks.setPurposeCode(s);
+        }
 
-    @Mock
-    private WebClient.RequestHeadersUriSpec<?> requestHeadersUriSpec;  // IMPORTANT: Use wildcard '?'
-
-    @Mock
-    private WebClient.RequestHeadersSpec<?> requestHeadersSpec;
-
-    @Mock
-    private WebClient.ResponseSpec responseSpec;
-
-    @InjectMocks
-    private HolidayDataServiceImpl holidayDataService;
-
-    @Before
-    public void setUp() {
-        MockitoAnnotations.initMocks(this);  // Initialize mocks
-    }
-
-    @Test
-    public void getHolidayforCurrency_ShouldReturnListOfHolidays() {
-        // Arrange
-        String currencyCode = "USD";
-        String startDate = LocalDate.now().toString();
-        String endDate = LocalDate.now().withDayOfYear(365).toString();
-
-        HolidayDTO mockHolidayDTO = new HolidayDTO();
-        mockHolidayDTO.setHolidayList(Arrays.asList("2023-12-25", "2024-01-01"));
-
-        // Mock the WebClient chain
-        when(holidayWebClient.get()).thenReturn(requestHeadersUriSpec);
-
-        // Mock the `uri()` function properly
-        when(requestHeadersUriSpec.uri(any(Function.class))).thenReturn(requestHeadersSpec);  // Fixing uri() mock
-
-        // Mock the remaining WebClient calls
-        when(requestHeadersSpec.accept(MediaType.APPLICATION_JSON)).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.bodyToMono(HolidayDTO.class)).thenReturn(Mono.just(mockHolidayDTO));
-
-        // Act
-        List<Holiday> result = holidayDataService.getHolidayforCurrency(currencyCode);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertEquals("2023-12-25", result.get(0).getDate());
-        assertEquals("USD", result.get(0).getCurrencyCode());
-    }
-}
+        return checks;  // Return the constructed PurposeCode object
+    })
+    .collect(Collectors.toList()); // Collect the results into a list
