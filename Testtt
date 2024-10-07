@@ -43,3 +43,57 @@ public void deleteOldFilesKeepLatest(String folderPath) throws IOException {
         System.out.println("Deleted file: " + fileKey);
     }
 }
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import java.util.Collections;
+import java.util.Optional;
+
+import static org.mockito.Mockito.*;
+
+public class PurposeCodeValidationTest {
+
+    private CountryRepository countryRepository;
+    private Sheet datatypeSheet;
+
+    @BeforeEach
+    public void setup() {
+        countryRepository = Mockito.mock(CountryRepository.class);
+        datatypeSheet = Mockito.mock(Sheet.class);
+    }
+
+    @Test
+    public void testProcessPurposeCodeValidationSheet() {
+        // Mocking the sheet and rows
+        Row row1 = mock(Row.class);
+        when(row1.getCell(1)).thenReturn(createCell("USA"));
+        when(row1.getCell(2)).thenReturn(createCell("Purpose1"));
+
+        Row row2 = mock(Row.class);
+        when(row2.getCell(1)).thenReturn(createCell("USA"));
+        when(row2.getCell(2)).thenReturn(createCell("Purpose2"));
+
+        when(datatypeSheet.getLastRowNum()).thenReturn(2);
+        when(datatypeSheet.getRow(1)).thenReturn(row1);
+        when(datatypeSheet.getRow(2)).thenReturn(row2);
+
+        Country country = new Country();
+        when(countryRepository.findById("USA")).thenReturn(Optional.of(country));
+
+        // Call the method
+        processPurposeCodeValidationSheet(datatypeSheet, countryRepository);
+
+        // Verify the country object was updated
+        verify(countryRepository).save(country);
+        assertEquals(Set.of("Purpose1", "Purpose2"), country.getPurposeCodeList());
+    }
+
+    private org.apache.poi.ss.usermodel.Cell createCell(String value) {
+        org.apache.poi.ss.usermodel.Cell cell = mock(org.apache.poi.ss.usermodel.Cell.class);
+        when(cell.getStringCellValue()).thenReturn(value);
+        return cell;
+    }
+}
