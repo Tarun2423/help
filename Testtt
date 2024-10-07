@@ -1,27 +1,45 @@
-List<PurposeCode> checkList = 
-    IntStream.range(1, datatypeSheet.getLastRowNum()) // Iterate over the rows
-    .mapToObj(i -> datatypeSheet.getRow(i))           // Map each index to a row
-    .filter(row -> row != null)                       // Filter out null rows
-    .filter(row -> {
-        Cell cell0 = row.getCell(0);
-        Cell cell1 = row.getCell(1);
-        return !(cell0 == null || cell0.getStringCellValue().trim().isEmpty()) &&
-               !(cell1 == null || cell1.getStringCellValue().trim().isEmpty());
-    }) // Filter rows where both columns 0 and 1 are not null and not empty
-    .map(row -> {
-        PurposeCode checks = new PurposeCode();
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
+import software.amazon.awssdk.services.s3.model.S3Object;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
-        // Set Iso3aCountryCode if column 1 is not null, otherwise set it to "*"
-        checks.setIso3aCountryCode(row.getCell(1) != null ? row.getCell(1).getStringCellValue() : "*");
+import java.io.IOException;
+import java.util.Comparator;
+import java.util.List;
 
-        // Set PurposeCode if column 2 is not null
-        if (ValidationUtil.isNotNull(row.getCell(2))) {
-            String s = row.getCell(2).getCellTypeEnum() == CellType.STRING
-                ? row.getCell(2).getStringCellValue().trim()
-                : String.valueOf(row.getCell(2).getNumericCellValue());
-            checks.setPurposeCode(s);
-        }
+public void deleteOldFilesKeepLatest(String folderPath) throws IOException {
+    // List all files in the folder
+    ListObjectsV2Request listObjectsRequest = ListObjectsV2Request.builder()
+        .bucket(s3Configuration.getBucketname()) // S3 bucket name
+        .prefix(folderPath) // Folder path
+        .build();
 
-        return checks;  // Return the constructed PurposeCode object
-    })
-    .collect(Collectors.toList()); // Collect the results into a list
+    ListObjectsV2Response listObjectsResponse = s3.listObjectsV2(listObjectsRequest);
+    List<S3Object> s3Objects = listObjectsResponse.contents();
+
+    // If no files are found, return early
+    if (s3Objects.isEmpty()) {
+        System.out.println("No files found in the folder.");
+        return;
+    }
+
+    // Sort the files by last modified timestamp (you can also sort by key if the timestamp is in the key)
+    s3Objects.sort(Comparator.comparing(S3Object::lastModified).reversed());
+
+    // Keep the latest file (first in the list after sorting)
+    S3Object latestFile = s3Objects.get(0);
+    System.out.println("Latest file to keep: " + latestFile.key());
+
+    // Delete all other files except the latest one
+    for (int i = 1; i < s3Objects.size(); i++) {
+        String fileKey = s3Objects.get(i).key();
+        DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+            .bucket(s3Configuration.getBucketname())
+            .key(fileKey)
+            .build();
+
+        // Delete the file
+        s3.deleteObject(deleteObjectRequest);
+        System.out.println("Deleted file: " + fileKey);
+    }
+}
