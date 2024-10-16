@@ -1,43 +1,54 @@
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Object;
+import software.amazon.awssdk.core.sync.RequestBody;
 
-import java.io.File;
+import java.io.InputStream;
+import java.io.IOException;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
-@Service
-public class S3FileService {
+public void pushFile(InputStream inputStream) throws IOException {
+    // Step 1: List all the objects in the "NWM_Validations" folder
+    ListObjectsV2Request listObjectsRequest = ListObjectsV2Request.builder()
+        .bucket(s3Configuration.getBucketname())
+        .prefix("NWM_Validations/") // Folder path
+        .build();
 
-    private static final String BUCKET_NAME = "your-bucket-name"; // replace with your bucket name
+    ListObjectsV2Response listObjectsResponse = s3.listObjectsV2(listObjectsRequest);
+    List<S3Object> s3Objects = listObjectsResponse.contents();
 
-    @Autowired
-    private AmazonS3 amazonS3;
+    // Step 2: Sort the objects by last modified date in descending order (latest first)
+    s3Objects.sort(Comparator.comparing(S3Object::lastModified).reversed());
 
-    public void uploadFile(File newFile) {
-        // List existing files
-        List<S3ObjectSummary> existingFiles = amazonS3.listObjects(BUCKET_NAME).getObjectSummaries();
+    // Step 3: Keep only the latest 3 and delete the rest
+    if (s3Objects.size() > 3) {
+        for (int i = 3; i < s3Objects.size(); i++) {
+            String fileKey = s3Objects.get(i).key();
 
-        // Check if there are more than 3 files
-        if (existingFiles.size() >= 3) {
-            // Sort files by last modified date (oldest first)
-            List<S3ObjectSummary> filesToDelete = existingFiles.stream()
-                    .sorted((a, b) -> a.getLastModified().compareTo(b.getLastModified()))
-                    .limit(existingFiles.size() - 2) // Keep the latest 2 files
-                    .collect(Collectors.toList());
+            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+                .bucket(s3Configuration.getBucketname())
+                .key(fileKey)
+                .build();
 
-            // Delete the old files
-            for (S3ObjectSummary file : filesToDelete) {
-                amazonS3.deleteObject(BUCKET_NAME, file.getKey());
-            }
-        }
-
-        // Now upload the new file
-        try {
-            amazonS3.putObject(BUCKET_NAME, newFile.getName(), newFile);
-        } catch (Exception e) {
-            throw new S3FileUploadException("Failed to upload file: " + e.getMessage(), e);
+            // Delete the older file
+            s3.deleteObject(deleteObjectRequest);
+            System.out.println("Deleted old file: " + fileKey);
         }
     }
+
+    // Step 4: Add the new file to the bucket
+    Date today = new Date();
+    String folderName = "NWM_Validations/Business_validation_" + today.toInstant() + ".xlsx";
+
+    PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+        .bucket(s3Configuration.getBucketname())
+        .key(folderName)
+        .build();
+
+    s3.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, inputStream.available()));
+    System.out.println("New file uploaded: " + folderName);
 }
