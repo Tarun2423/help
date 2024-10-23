@@ -1,54 +1,38 @@
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.S3Object;
-import software.amazon.awssdk.core.sync.RequestBody;
+@Test
+public void validatePaymentTest() throws Exception {
+    // Prepare request body from a test JSON file
+    String requestBody = new String(Files.readAllBytes(Paths.get("arc/test/resources/PaymentMessage.json")));
 
-import java.io.InputStream;
-import java.io.IOException;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
+    // Mock BearerTokenAuthentication with token attributes
+    BearerTokenAuthentication mockAuthentication = Mockito.mock(BearerTokenAuthentication.class);
+    
+    // Mock the scope attribute inside the token attributes
+    Map<String, Object> tokenAttributes = new HashMap<>();
+    tokenAttributes.put("scope", Arrays.asList("api.currency-guide.v1"));
+    
+    // Set the mocked token attributes in the authentication object
+    Mockito.when(mockAuthentication.getTokenAttributes()).thenReturn(tokenAttributes);
 
-public void pushFile(InputStream inputStream) throws IOException {
-    // Step 1: List all the objects in the "NWM_Validations" folder
-    ListObjectsV2Request listObjectsRequest = ListObjectsV2Request.builder()
-        .bucket(s3Configuration.getBucketname())
-        .prefix("NWM_Validations/") // Folder path
-        .build();
+    // Mock the SecurityContext to use our mockAuthentication
+    SecurityContext securityContext = Mockito.mock(SecurityContext.class);
+    Mockito.when(securityContext.getAuthentication()).thenReturn(mockAuthentication);
+    
+    // Set the SecurityContext in the SecurityContextHolder
+    SecurityContextHolder.setContext(securityContext);
 
-    ListObjectsV2Response listObjectsResponse = s3.listObjectsV2(listObjectsRequest);
-    List<S3Object> s3Objects = listObjectsResponse.contents();
+    // Mock service layer method behavior
+    Mockito.when(paymentValidationSA.getPaymentStatusforPCM(Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
+           .thenReturn(new ValidationResult(StatusEnum.OK, null));
 
-    // Step 2: Sort the objects by last modified date in descending order (latest first)
-    s3Objects.sort(Comparator.comparing(S3Object::lastModified).reversed());
-
-    // Step 3: Keep only the latest 3 and delete the rest
-    if (s3Objects.size() > 3) {
-        for (int i = 3; i < s3Objects.size(); i++) {
-            String fileKey = s3Objects.get(i).key();
-
-            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
-                .bucket(s3Configuration.getBucketname())
-                .key(fileKey)
-                .build();
-
-            // Delete the older file
-            s3.deleteObject(deleteObjectRequest);
-            System.out.println("Deleted old file: " + fileKey);
-        }
-    }
-
-    // Step 4: Add the new file to the bucket
-    Date today = new Date();
-    String folderName = "NWM_Validations/Business_validation_" + today.toInstant() + ".xlsx";
-
-    PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-        .bucket(s3Configuration.getBucketname())
-        .key(folderName)
-        .build();
-
-    s3.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, inputStream.available()));
-    System.out.println("New file uploaded: " + folderName);
+    // Perform the request and verify the response
+    mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/payment-validation")
+            .param("originationCountryCode", "ABC")
+            .param("currencyCode", "ASD")
+            .param("destinationCountryCode", "SFD")
+            .header("X-Request-Id", "DRFOERTOPUUD")
+            .content(requestBody)
+            .contentType(MediaType.APPLICATION_JSON))
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andExpect(content().json("{\"status\":\"OK\", \"reasons\": null}"));
 }
