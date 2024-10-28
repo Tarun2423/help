@@ -1,38 +1,23 @@
-@Test
-public void validatePaymentTest() throws Exception {
-    // Prepare request body from a test JSON file
-    String requestBody = new String(Files.readAllBytes(Paths.get("arc/test/resources/PaymentMessage.json")));
+Test
+    public void testGetPropertyNodeWithMissingField() throws Exception {
+        String jsonString = "{\"level1\": {\"field2\": \"value\"}}";
+        JsonNode rootNode = mapper.readTree(jsonString);
+        JsonNode result = getPropertyNode.apply(rootNode, "level1.field3");
+        assertNull(result); // Expecting null for a missing field
+    }
 
-    // Mock BearerTokenAuthentication with token attributes
-    BearerTokenAuthentication mockAuthentication = Mockito.mock(BearerTokenAuthentication.class);
-    
-    // Mock the scope attribute inside the token attributes
-    Map<String, Object> tokenAttributes = new HashMap<>();
-    tokenAttributes.put("scope", Arrays.asList("api.currency-guide.v1"));
-    
-    // Set the mocked token attributes in the authentication object
-    Mockito.when(mockAuthentication.getTokenAttributes()).thenReturn(tokenAttributes);
+    @Test
+    public void testGetPropertyNodeWithNullField() throws Exception {
+        String jsonString = "{\"level1\": {\"field1\": null}}";
+        JsonNode rootNode = mapper.readTree(jsonString);
+        JsonNode result = getPropertyNode.apply(rootNode, "level1.field1");
+        assertNull(result); // Expecting null for an explicitly null field
+    }
 
-    // Mock the SecurityContext to use our mockAuthentication
-    SecurityContext securityContext = Mockito.mock(SecurityContext.class);
-    Mockito.when(securityContext.getAuthentication()).thenReturn(mockAuthentication);
-    
-    // Set the SecurityContext in the SecurityContextHolder
-    SecurityContextHolder.setContext(securityContext);
-
-    // Mock service layer method behavior
-    Mockito.when(paymentValidationSA.getPaymentStatusforPCM(Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
-           .thenReturn(new ValidationResult(StatusEnum.OK, null));
-
-    // Perform the request and verify the response
-    mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/payment-validation")
-            .param("originationCountryCode", "ABC")
-            .param("currencyCode", "ASD")
-            .param("destinationCountryCode", "SFD")
-            .header("X-Request-Id", "DRFOERTOPUUD")
-            .content(requestBody)
-            .contentType(MediaType.APPLICATION_JSON))
-            .andDo(print())
-            .andExpect(status().isOk())
-            .andExpect(content().json("{\"status\":\"OK\", \"reasons\": null}"));
-}
+    @Test
+    public void testGetPropertyNodeWithValidField() throws Exception {
+        String jsonString = "{\"level1\": {\"field2\": \"value\"}}";
+        JsonNode rootNode = mapper.readTree(jsonString);
+        JsonNode result = getPropertyNode.apply(rootNode, "level1.field2");
+        assertNotNull(result); // Should not be null
+        assertEquals("value", result.asText()); // Check the
